@@ -529,7 +529,7 @@ tr.ov:hover td{background:var(--red-soft)}
     VIEW=b.getAttribute("data-v");
     [].slice.call($("tabs").children).forEach(function(x){ x.classList.toggle("on",x===b) });
     $("coView").hidden = (VIEW==="summary");
-    $("mailPanel").hidden = (VIEW==="summary");
+    $("mailPanel").hidden = (VIEW==="summary") || !canWrite; // mails & downloads: admin only
     [].slice.call(document.querySelectorAll(".sumOnly")).forEach(function(p){ p.hidden = (VIEW!=="summary") });
     renderSpoc();
     render();
@@ -851,6 +851,8 @@ tr.ov:hover td{background:var(--red-soft)}
       }
       var user=null; try{ user = await window.claude.use("user") }catch(eu){}
       canWrite=false; try{ canWrite = !!(user && typeof user.canEdit==="function" ? user.canEdit() : (user&&user.canWrite)) }catch(ec){}
+      // admin-only controls: downloads and mail tools stay hidden for view-only users
+      if(!canWrite){ try{ $("dlTrk").style.display="none"; $("dlFmt").style.display="none" }catch(eh){} }
       $("liveState").textContent = "●";
       function applyItems(snap){
         ITEMS={}; snap.docs.forEach(function(d){ ITEMS[d.id]= (typeof d.data==="function")?d.data():d.data });
