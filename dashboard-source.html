@@ -292,6 +292,7 @@ tr.ov:hover td{background:var(--red-soft)}
     <button class="btn amber" id="buildOver">Generate OVERDUE follow-up mail</button>
     <button class="btn" id="buildMail">Generate full reminder</button>
     <button class="btn ghost" id="copyMail">Copy</button>
+    <a class="btn" id="outlookBtn" href="#" target="_blank" rel="noopener" style="text-decoration:none;display:inline-block">📧 Send via Outlook</a>
     <a class="btn ghost" id="mailto" href="#" style="text-decoration:none;display:inline-block">Open in mail app</a>
   </div>
   <textarea id="mailBody" placeholder="The follow-up mail will appear here…"></textarea>
@@ -552,7 +553,9 @@ tr.ov:hover td{background:var(--red-soft)}
       "Project Owner — Centralized MRP",
       "Eastman Auto & Power Ltd"].join("\n");
     $("mailBody").value=body;
-    $("mailto").href="mailto:"+encodeURIComponent(OWNER)+"?cc="+encodeURIComponent(sp.mails.join(","))+"&subject="+encodeURIComponent("EAPL MRP Tracker | "+kind+" Changed | "+i.company+" | "+i.item)+"&body="+encodeURIComponent(body);
+    var subj1="EAPL MRP Tracker | "+kind+" Changed | "+i.company+" | "+i.item;
+    $("mailto").href="mailto:"+encodeURIComponent(OWNER)+"?cc="+encodeURIComponent(sp.mails.join(","))+"&subject="+encodeURIComponent(subj1)+"&body="+encodeURIComponent(body);
+    setOutlook(OWNER, sp.mails.join(";"), subj1, body);
     flash(kind+" changed — alert mail prepared below (To: project owner, CC: SPOC)");
     try{ $("mailBody").scrollIntoView({behavior:"smooth",block:"center"}) }catch(e){}
   }
@@ -602,9 +605,18 @@ tr.ov:hover td{background:var(--red-soft)}
       "Regards,","Bhupendra Bisht","Project Owner — Centralized MRP","Eastman Auto & Power Ltd");
     return {text:lines.join("\n"), to:Object.keys(mails).join(",")};
   }
+  // Outlook Web compose deeplink — opens the user's Outlook (bhupendra.bisht@eaplworld.com) with the mail pre-filled
+  function setOutlook(to, cc, subject, body){
+    $("outlookBtn").href="https://outlook.office.com/mail/deeplink/compose?to="+encodeURIComponent(to)
+      +(cc?("&cc="+encodeURIComponent(cc)):"")
+      +"&subject="+encodeURIComponent(subject)
+      +"&body="+encodeURIComponent(body.slice(0,6000));
+  }
   function buildMail(over, co){
     var d=digest(over, co); $("mailBody").value=d.text;
-    $("mailto").href="mailto:"+encodeURIComponent(d.to)+"?subject="+encodeURIComponent("EAPL MRP Tracker | "+(over?"Overdue Follow-up":"Status Reminder")+(co?(" | "+co):" | All Companies")+" | "+today())+"&body="+encodeURIComponent(d.text.slice(0,1800));
+    var subj2="EAPL MRP Tracker | "+(over?"Overdue Follow-up":"Status Reminder")+(co?(" | "+co):" | All Companies")+" | "+today();
+    $("mailto").href="mailto:"+encodeURIComponent(d.to)+"?subject="+encodeURIComponent(subj2)+"&body="+encodeURIComponent(d.text.slice(0,1800));
+    setOutlook(d.to.split(",").join(";"), OWNER, subj2, d.text);
     try{ $("mailBody").scrollIntoView({behavior:"smooth",block:"center"}) }catch(e){}
   }
   document.addEventListener("click",function(e){
