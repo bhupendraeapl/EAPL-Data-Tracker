@@ -121,6 +121,22 @@ textarea{width:100%;box-sizing:border-box;min-height:150px;background:var(--bg);
 .empty{padding:28px;text-align:center;color:var(--muted);font-size:14px}
 a.btnlink{display:inline-block;background:var(--blue);color:#fff;border-radius:8px;padding:9px 16px;font-size:14px;font-weight:600;text-decoration:none}
 
+/* ===== hover color effects on every tile and tab ===== */
+.panel,.kpi,.cocard,.deptblk,.tabbtn,.spoc{transition:transform .3s ease, box-shadow .3s ease, border-color .3s ease, background .3s ease}
+.panel:hover,.deptblk:hover{border-color:rgba(247,148,29,.75);
+  box-shadow:0 22px 48px rgba(224,94,18,.22), 0 0 0 1px rgba(247,148,29,.25), inset 0 1px 0 rgba(255,255,255,.75)}
+.kpi:hover{background:linear-gradient(150deg,rgba(247,148,29,.16),rgba(29,95,191,.12)), var(--surface);
+  box-shadow:0 22px 44px rgba(224,94,18,.28), inset 0 1px 0 rgba(255,255,255,.8)}
+.cocard:hover{border-color:rgba(29,95,191,.8);background:linear-gradient(150deg,rgba(29,95,191,.14),rgba(247,148,29,.1)), var(--surface);
+  box-shadow:0 22px 44px rgba(29,95,191,.26), inset 0 1px 0 rgba(255,255,255,.8)}
+.spoc:hover{border-color:rgba(14,138,95,.7);background:linear-gradient(150deg,rgba(14,138,95,.12),transparent), var(--surface)}
+.tabbtn:hover{background:linear-gradient(135deg,rgba(247,148,29,.25),rgba(29,95,191,.18)), var(--surface);
+  border-color:rgba(247,148,29,.8);color:var(--ink);box-shadow:0 14px 30px rgba(224,94,18,.3)}
+.tabbtn.on:hover{background:linear-gradient(135deg,#143B66,#2A6FD6);color:#FFE4B8}
+.deptblk:hover .dh b{color:var(--amber)}
+tbody tr:hover td{background:var(--blue-soft)}
+tr.ov:hover td{background:var(--red-soft)}
+
 /* ===== liquid glass pass: every tile, tab and card ===== */
 :root{--surface:rgba(255,255,255,0.42)}
 @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){--surface:rgba(255,255,255,0.08)}}
