@@ -120,10 +120,9 @@ textarea{width:100%;box-sizing:border-box;min-height:150px;background:var(--bg);
 a.btnlink{display:inline-block;background:var(--blue);color:#fff;border-radius:8px;padding:9px 16px;font-size:14px;font-weight:600;text-decoration:none}
 </style>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.min.js"></script>
 <div class="wrap">
 <header class="bar">
-  <div class="bolt"><svg viewBox="0 0 24 24" aria-label=""><path d="M13 2 4 14h6l-2 8 9-12h-6l2-8z" fill="#fff"/></svg></div>
   <div class="t"><b>EASTMAN · MRP REQUIRED DATA TRACKER</b><span>Format-wise tracking · ENEPL · EPTPL · EGTPL · EAPL (LAB) · Project owner: Bhupendra Bisht</span></div>
   <div class="live" id="liveState">connecting…</div>
   <button class="btn ghost" id="themeBtn" style="color:var(--head-ink);border-color:#3A4F45">☀/☾</button>
@@ -273,7 +272,7 @@ a.btnlink{display:inline-block;background:var(--blue);color:#fff;border-radius:8
     r.setAttribute("data-theme",next);
     try{ localStorage.setItem("trk-theme",next) }catch(e){}
   });
-  var th="dark"; try{ th=localStorage.getItem("trk-theme")||"dark" }catch(e){}
+  var th="light"; try{ th=localStorage.getItem("trk-theme")||"light" }catch(e){}
   document.documentElement.setAttribute("data-theme",th);
 
   function counts(list){
@@ -561,39 +560,52 @@ a.btnlink{display:inline-block;background:var(--blue);color:#fff;border-radius:8
         if(typeof XLSX==="undefined"){ flash("Excel library not loaded — reload the page"); return }
         var list=Object.keys(ITEMS).map(function(k){ return Object.assign({_id:k}, ITEMS[k]) });
         if(!list.length){ flash("No data loaded yet"); return }
-        list.sort(function(a,b){ if(a.company!==b.company)return a.company<b.company?-1:1; if(a.dept!==b.dept)return a.dept<b.dept?-1:1; return fmtOf(a.item)<fmtOf(b.item)?-1:1 });
-        var head=["Sr No","Company","Format","Requirement","Department","SPOC Name","SPOC Mail ID","Stage","Target Date","Prev Target","Completed On","Overdue","Remarks"];
-        function rowsOf(arr){
-          return arr.map(function(i,ix){
-            var sp=spocOf(i.company,i.dept);
-            return [ix+1, i.company, fmtOf(i.item), i.item, i.dept, sp.names.join(", "), sp.mails.join(", "),
-              i.status, i.target||"", i.prevTarget||"", i.closed||"", isOver(i)?"YES":"", i.remarks||""];
-          });
-        }
+        var ORDER={"ENEPL":1,"EPTPL":2,"EGTPL":3,"EAPL (LAB)":4};
+        list.sort(function(a,b){ var ca=ORDER[a.company]||9, cb=ORDER[b.company]||9; if(ca!==cb)return ca-cb; return fmtOf(a.item)<fmtOf(b.item)?-1:1 });
+        var BRD={top:{style:"thin",color:{rgb:"000000"}},bottom:{style:"thin",color:{rgb:"000000"}},left:{style:"thin",color:{rgb:"000000"}},right:{style:"thin",color:{rgb:"000000"}}};
+        function S(o){ return Object.assign({font:{name:"Calibri",sz:10},alignment:{vertical:"center",wrapText:true},border:BRD}, o||{}) }
+        var stHead=S({font:{name:"Calibri",sz:10,bold:true},fill:{fgColor:{rgb:"92D050"}},alignment:{vertical:"center",horizontal:"center",wrapText:true}});
+        var stCo=S({font:{name:"Calibri",sz:11,bold:true,color:{rgb:"FFFFFF"}},fill:{fgColor:{rgb:"A6A6A6"}},alignment:{vertical:"center",horizontal:"center"}});
+        var stCell=S({}); var stBand=S({fill:{fgColor:{rgb:"EDF2F9"}}});
+        var stStatusNS=S({font:{name:"Calibri",sz:10,bold:true,color:{rgb:"1F4ED8"}},fill:{fgColor:{rgb:"FADBD8"}},alignment:{vertical:"center",horizontal:"center"}});
+        var stStatusIP=S({font:{name:"Calibri",sz:10,bold:true,color:{rgb:"9C5700"}},fill:{fgColor:{rgb:"FFF2CC"}},alignment:{vertical:"center",horizontal:"center"}});
+        var stStatusDN=S({font:{name:"Calibri",sz:10,bold:true,color:{rgb:"1E7B45"}},fill:{fgColor:{rgb:"E2F2EC"}},alignment:{vertical:"center",horizontal:"center"}});
+        var stDate=S({font:{name:"Calibri",sz:10,color:{rgb:"1F4ED8"}},alignment:{vertical:"center",horizontal:"center"}});
+        function statusStyle(s){ return s==="Done"?stStatusDN:(s==="Not Started"?stStatusNS:stStatusIP) }
+        var head=["Company / Entity","Master Data / Requirement","Required Action / Correction","Responsible Department","Correction Status","Raised Date","Target Date","Closed Date","Remarks"];
         var wb=XLSX.utils.book_new();
-        var cols=[{wch:6},{wch:12},{wch:22},{wch:34},{wch:16},{wch:22},{wch:34},{wch:16},{wch:12},{wch:12},{wch:13},{wch:9},{wch:30}];
-        var c=counts(list);
-        var summary=[["EASTMAN AUTO & POWER LTD — MRP REQUIRED DATA TRACKER REPORT"],
-          ["Generated on", today(), "", "Project owner", "Bhupendra Bisht (bhupendra.bisht@eaplworld.com)"],[],
-          ["Total tasks", c.total],["Not started", c.ns],["Data collection", c.dc],["Validation", c.vl],["Uploaded in SAP", c.up],
-          ["Completed", c.dn],["Overdue", c.ov],["Completion %", Math.round(100*c.dn/c.total)+"%"],[]];
+        var aoa=[head], merges=[], rowStyles=[];
+        var r=1;
         ["ENEPL","EPTPL","EGTPL","EAPL (LAB)"].forEach(function(co){
           var cl=list.filter(function(i){return i.company===co}); if(!cl.length)return;
-          var cc=counts(cl);
-          summary.push([co, cc.dn+" / "+cc.total+" done", cc.ov?cc.ov+" overdue":"", Math.round(100*cc.dn/cc.total)+"%"]);
+          var start=r;
+          cl.forEach(function(i,ix){
+            aoa.push([ix===0?co:"", i.item, i.action||"", i.dept, i.status, i.raised||"", i.target||"", i.closed||"", i.remarks||""]);
+            rowStyles.push({row:r, band: ix%2===1, status:i.status}); r++;
+          });
+          merges.push({s:{r:start,c:0}, e:{r:r-1,c:0}});
         });
-        var wsS=XLSX.utils.aoa_to_sheet(summary); wsS["!cols"]=[{wch:24},{wch:18},{wch:14},{wch:44}];
-        XLSX.utils.book_append_sheet(wb,wsS,"Summary");
-        var wsA=XLSX.utils.aoa_to_sheet([head].concat(rowsOf(list))); wsA["!cols"]=cols;
-        XLSX.utils.book_append_sheet(wb,wsA,"All Companies");
-        ["ENEPL","EPTPL","EGTPL","EAPL (LAB)"].forEach(function(co){
-          var cl=list.filter(function(i){return i.company===co}); if(!cl.length)return;
-          var ws=XLSX.utils.aoa_to_sheet([head].concat(rowsOf(cl))); ws["!cols"]=cols;
-          XLSX.utils.book_append_sheet(wb,ws,co.replace(/[\\\/\?\*\[\]:]/g," ").slice(0,31));
+        var ws=XLSX.utils.aoa_to_sheet(aoa);
+        ws["!cols"]=[{wch:14},{wch:30},{wch:62},{wch:20},{wch:15},{wch:12},{wch:12},{wch:12},{wch:28}];
+        ws["!merges"]=merges;
+        ws["!rows"]=[{hpt:30}];
+        for(var cI=0;cI<head.length;cI++){ var a=XLSX.utils.encode_cell({r:0,c:cI}); if(ws[a]) ws[a].s=stHead; }
+        rowStyles.forEach(function(rs){
+          for(var cI=0;cI<head.length;cI++){
+            var a=XLSX.utils.encode_cell({r:rs.row,c:cI}); if(!ws[a]) ws[a]={t:"s",v:""};
+            if(cI===0) ws[a].s=stCo;
+            else if(cI===4) ws[a].s=statusStyle(rs.status);
+            else if(cI>=5&&cI<=7) ws[a].s=stDate;
+            else ws[a].s=rs.band?stBand:stCell;
+          }
         });
-        var sp=[["Company","Department","SPOC Name","Mail ID"]];
+        XLSX.utils.book_append_sheet(wb,ws,"Correction Tracker");
+        // SPOC sheet
+        var sp=[["Company / Entity","Responsible Department","SPOC Name","Mail ID"]];
         SPOC_SLOTS.forEach(function(k){ var p=k.split("|"), v=SPOC[k]||{}; sp.push([p[0],p[1],v.name||"",v.mail||""]) });
-        var wsP=XLSX.utils.aoa_to_sheet(sp); wsP["!cols"]=[{wch:12},{wch:14},{wch:24},{wch:36}];
+        var wsP=XLSX.utils.aoa_to_sheet(sp); wsP["!cols"]=[{wch:16},{wch:22},{wch:24},{wch:36}];
+        for(var cI2=0;cI2<4;cI2++){ var a2=XLSX.utils.encode_cell({r:0,c:cI2}); if(wsP[a2]) wsP[a2].s=stHead; }
+        for(var r2=1;r2<sp.length;r2++){ for(var c2=0;c2<4;c2++){ var a3=XLSX.utils.encode_cell({r:r2,c:c2}); if(!wsP[a3])wsP[a3]={t:"s",v:""}; wsP[a3].s=r2%2===0?stBand:stCell; } }
         XLSX.utils.book_append_sheet(wb,wsP,"SPOC List");
         var out=XLSX.write(wb,{bookType:"xlsx",type:"array"});
         var blob=new Blob([out],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
