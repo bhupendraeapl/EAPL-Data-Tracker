@@ -120,6 +120,31 @@ textarea{width:100%;box-sizing:border-box;min-height:150px;background:var(--bg);
 .saved{font-size:12.5px;color:var(--em);min-height:16px}
 .empty{padding:28px;text-align:center;color:var(--muted);font-size:14px}
 a.btnlink{display:inline-block;background:var(--blue);color:#fff;border-radius:8px;padding:9px 16px;font-size:14px;font-weight:600;text-decoration:none}
+
+/* ===== liquid glass pass: every tile, tab and card ===== */
+:root{--surface:rgba(255,255,255,0.42)}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){--surface:rgba(255,255,255,0.08)}}
+:root[data-theme="dark"]{--surface:rgba(255,255,255,0.08)}
+.panel,.kpi,.cocard,.deptblk,.tabbtn,.tblwrap,.spoc{
+  position:relative;overflow:hidden;
+  -webkit-backdrop-filter:blur(22px) saturate(1.7);backdrop-filter:blur(22px) saturate(1.7);
+  border:1px solid rgba(255,255,255,.55);
+  box-shadow:0 18px 40px rgba(11,42,74,.16), inset 0 1px 0 rgba(255,255,255,.75), inset 0 -18px 34px rgba(255,255,255,.14)}
+.panel::before,.kpi::before,.cocard::before,.deptblk::before{
+  content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;
+  background:linear-gradient(160deg,rgba(255,255,255,.5) 0%,rgba(255,255,255,.12) 28%,transparent 55%,rgba(255,255,255,.1) 100%)}
+.panel>*,.kpi>*,.cocard>*,.deptblk>*{position:relative;z-index:1}
+.tabbtn{background:var(--surface);box-shadow:0 10px 24px rgba(11,42,74,.14), inset 0 1px 0 rgba(255,255,255,.7)}
+.tabbtn:hover{transform:translateY(-2px);transition:transform .25s ease}
+.tabbtn.on{border-color:rgba(255,255,255,.35);box-shadow:0 12px 28px rgba(11,42,74,.35), inset 0 1px 0 rgba(255,255,255,.35)}
+.spoc{background:var(--surface)}
+.kpi:hover{border-color:rgba(247,148,29,.8)}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .panel, :root:not([data-theme="light"]) .kpi, :root:not([data-theme="light"]) .cocard, :root:not([data-theme="light"]) .deptblk, :root:not([data-theme="light"]) .tabbtn, :root:not([data-theme="light"]) .tblwrap, :root:not([data-theme="light"]) .spoc{
+  border-color:rgba(255,255,255,.2);
+  box-shadow:0 18px 40px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.22), inset 0 -18px 34px rgba(255,255,255,.04)}}
+:root[data-theme="dark"] .panel,:root[data-theme="dark"] .kpi,:root[data-theme="dark"] .cocard,:root[data-theme="dark"] .deptblk,:root[data-theme="dark"] .tabbtn,:root[data-theme="dark"] .tblwrap,:root[data-theme="dark"] .spoc{
+  border-color:rgba(255,255,255,.2);
+  box-shadow:0 18px 40px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.22), inset 0 -18px 34px rgba(255,255,255,.04)}
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.min.js"></script>
