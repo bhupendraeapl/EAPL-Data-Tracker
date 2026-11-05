@@ -538,16 +538,21 @@ tr.ov:hover td{background:var(--red-soft)}
     if(!i) return;
     kind = kind || "Target date";
     var sp=spocOf(i.company,i.dept);
-    var body=["EASTMAN AUTO & POWER LTD — MRP Tracker: "+kind.toUpperCase()+" CHANGED","",
-      "Task: ["+fmtOf(i.item)+"] "+i.item,
-      "Company: "+i.company+" · Department: "+i.dept+(sp.names.length?(" · SPOC: "+sp.names.join(", ")):""),
-      "Current stage: "+i.status,
-      kind+" changed: "+(oldD||"—")+"  →  "+(newD||"removed"),
-      "Changed on: "+today(),"",
-      "Please confirm the reason for the change and the new commitment.",
-      "Project owner: Bhupendra Bisht <"+OWNER+">"].join("\n");
+    var body=["Dear Team,","",
+      "This is to inform you that the following "+kind.toLowerCase()+" has been changed in the EAPL MRP Required Data Tracker:","",
+      "Task              : ["+fmtOf(i.item)+"] "+i.item,
+      "Company           : "+i.company,
+      "Department        : "+i.dept+(sp.names.length?("  (SPOC: "+sp.names.join(", ")+")"):""),
+      "Current stage     : "+i.status,
+      kind+"       : "+(oldD||"—")+"  →  "+(newD||"removed"),
+      "Changed on        : "+today(),"",
+      "Kindly confirm the reason for this change and share the revised commitment date at the earliest.","",
+      "Regards,",
+      "Bhupendra Bisht",
+      "Project Owner — Centralized MRP",
+      "Eastman Auto & Power Ltd"].join("\n");
     $("mailBody").value=body;
-    $("mailto").href="mailto:"+encodeURIComponent(OWNER)+"?cc="+encodeURIComponent(sp.mails.join(","))+"&subject="+encodeURIComponent(kind+" changed — "+i.item+" ("+i.company+") — MRP Tracker")+"&body="+encodeURIComponent(body);
+    $("mailto").href="mailto:"+encodeURIComponent(OWNER)+"?cc="+encodeURIComponent(sp.mails.join(","))+"&subject="+encodeURIComponent("EAPL MRP Tracker | "+kind+" Changed | "+i.company+" | "+i.item)+"&body="+encodeURIComponent(body);
     flash(kind+" changed — alert mail prepared below (To: project owner, CC: SPOC)");
     try{ $("mailBody").scrollIntoView({behavior:"smooth",block:"center"}) }catch(e){}
   }
@@ -574,9 +579,9 @@ tr.ov:hover td{background:var(--red-soft)}
     var list=Object.keys(ITEMS).map(function(k){return ITEMS[k]});
     if(onlyCo) list=list.filter(function(i){return i.company===onlyCo});
     var c=counts(list);
-    var lines=["EASTMAN AUTO & POWER LTD — MRP Required Data "+(onlyOverdue?"OVERDUE Follow-up":"Reminder")+(onlyCo?(" — "+onlyCo):""),
-      "Date: "+today(),"",
-      (onlyCo?onlyCo:"Overall")+": "+c.dn+" completed, "+c.ip+" in progress, "+c.ns+" not started, "+c.ov+" OVERDUE of "+c.total+" tasks ("+Math.round(100*c.dn/c.total)+"% complete)",""];
+    var lines=["Dear Team,","",
+      "Please find below the "+(onlyOverdue?"overdue follow-up":"status reminder")+" for the MRP required master data"+(onlyCo?(" — "+onlyCo):" (all companies)")+" as on "+today()+":","",
+      (onlyCo?onlyCo:"Overall")+" status: "+c.dn+" completed, "+c.ip+" in progress, "+c.ns+" not started, "+c.ov+" OVERDUE of "+c.total+" tasks ("+Math.round(100*c.dn/c.total)+"% complete)",""];
     var mails={};
     var open=list.filter(function(i){ return onlyOverdue ? isOver(i) : i.status!=="Done" });
     var byKey={};
@@ -592,13 +597,14 @@ tr.ov:hover td{background:var(--red-soft)}
       });
       lines.push("");
     });
-    if(!open.length) lines.push(onlyOverdue?"No overdue tasks. Well done!":"No open tasks.");
-    lines.push("Please update your tasks in the EAPL MRP Data Tracker dashboard. Completed tasks show their completion date in the tracker.");
+    if(!open.length) lines.push(onlyOverdue?"No overdue tasks. Well done!":"No open tasks.","");
+    lines.push("You are requested to complete your pending tasks and update the status in the EAPL MRP Data Tracker dashboard on priority.","",
+      "Regards,","Bhupendra Bisht","Project Owner — Centralized MRP","Eastman Auto & Power Ltd");
     return {text:lines.join("\n"), to:Object.keys(mails).join(",")};
   }
   function buildMail(over, co){
     var d=digest(over, co); $("mailBody").value=d.text;
-    $("mailto").href="mailto:"+encodeURIComponent(d.to)+"?subject="+encodeURIComponent((over?"OVERDUE — ":"")+"MRP Required Data Follow-up"+(co?(" — "+co):"")+" — Eastman Auto & Power")+"&body="+encodeURIComponent(d.text.slice(0,1800));
+    $("mailto").href="mailto:"+encodeURIComponent(d.to)+"?subject="+encodeURIComponent("EAPL MRP Tracker | "+(over?"Overdue Follow-up":"Status Reminder")+(co?(" | "+co):" | All Companies")+" | "+today())+"&body="+encodeURIComponent(d.text.slice(0,1800));
     try{ $("mailBody").scrollIntoView({behavior:"smooth",block:"center"}) }catch(e){}
   }
   document.addEventListener("click",function(e){
