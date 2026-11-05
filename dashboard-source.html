@@ -241,7 +241,7 @@ body{background:linear-gradient(160deg,var(--bg) 0%,var(--bg) 55%, rgba(247,148,
 .glassy{box-shadow:0 2px 10px rgba(11,42,74,.10)}
 </style>
 
-<script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.min.js"></script>
 <div class="wrap">
 <header class="bar">
   <div class="t"><b>EASTMAN · MRP REQUIRED DATA TRACKER</b><span>Format-wise tracking · ENEPL · EPTPL · EGTPL · EAPL (LAB) · Project owner: Bhupendra Bisht</span></div>
@@ -576,7 +576,7 @@ body{background:linear-gradient(160deg,var(--bg) 0%,var(--bg) 55%, rgba(247,148,
     [].slice.call($("tabs").children).forEach(function(x){ x.classList.toggle("on",x===b) });
     $("coView").hidden = (VIEW==="summary");
     $("mailPanel").hidden = (VIEW==="summary") || !canWrite; // mails & downloads: admin only
-    try{ $("mailPanel").classList.toggle("locked", localStorage.getItem("trk-mail-unlocked")!=="1") }catch(elk){}
+    try{ $("mailPanel").classList.toggle("locked", !window.__mailUnlocked) }catch(elk){}
     [].slice.call(document.querySelectorAll(".sumOnly")).forEach(function(p){ p.hidden = (VIEW!=="summary") });
     renderSpoc();
     render();
@@ -620,7 +620,7 @@ body{background:linear-gradient(160deg,var(--bg) 0%,var(--bg) 55%, rgba(247,148,
   $("lockBtn").addEventListener("click",function(){
     sha256Hex($("lockPass").value).then(function(h){
       if(h===LOCK_HASH){
-        try{ localStorage.setItem("trk-mail-unlocked","1") }catch(e){}
+        window.__mailUnlocked=true; try{ localStorage.removeItem("trk-mail-unlocked"); sessionStorage.removeItem("trk-mail-unlocked") }catch(e){}
         $("mailPanel").classList.remove("locked"); $("lockPass").value="";
       } else { $("lockMsg").textContent="Wrong password"; setTimeout(function(){$("lockMsg").textContent=""},3000) }
     }).catch(function(){ $("lockMsg").textContent="Unlock not supported in this browser" });
