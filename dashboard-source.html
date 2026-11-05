@@ -37,7 +37,8 @@ body::after{content:"";position:fixed;inset:-25%;z-index:-1;pointer-events:none;
 }
 .glassy{-webkit-backdrop-filter:blur(18px) saturate(1.5);backdrop-filter:blur(18px) saturate(1.5);
   box-shadow:0 18px 44px rgba(10,5,40,.25), inset 0 1px 0 rgba(255,255,255,.14)}
-.wrap{max-width:min(1720px,97vw);margin:0 auto;display:flex;flex-direction:column;gap:20px;padding-block:16px 48px}
+.wrap{max-width:min(1720px,97vw);margin:0 auto;display:flex;flex-direction:column;gap:20px;padding-block:16px 10px;min-height:calc(100vh - 26px)}
+.wrap footer{margin-top:auto}
 h1,h2,h3{margin:0;text-wrap:balance}
 header.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:10;background:linear-gradient(120deg,#0B2A4A 0%,#15406E 62%,#8A4A07 130%);color:var(--head-ink);
   border-radius:14px;padding:12px 18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;border:1px solid var(--line);
@@ -124,7 +125,7 @@ a.btnlink{display:inline-block;background:var(--blue);color:#fff;border-radius:8
 /* ===== phone / small screen layout ===== */
 @media (max-width:640px){
   body{padding-left:max(10px,env(safe-area-inset-left,0px));padding-right:max(10px,env(safe-area-inset-right,0px))}
-  .wrap{gap:12px;padding-block:10px 34px}
+  .wrap{gap:12px;padding-block:10px 8px}
   header.bar{padding:10px 12px;gap:8px;border-radius:12px}
   header .t b{font-size:13.5px;letter-spacing:.4px;line-height:1.3}
   header .t span{font-size:9.5px;letter-spacing:.8px;line-height:1.4}
@@ -296,10 +297,16 @@ tr.ov:hover td{background:var(--red-soft)}
     <a class="btn ghost" id="mailto" href="#" style="text-decoration:none;display:inline-block">Open in mail app</a>
   </div>
   <h2 style="margin-top:6px">Department-wise follow-up mails</h2>
-  <p class="note">Each department gets its own mail listing its pending and delayed tasks — sent to that department's SPOCs across all companies.</p>
-  <div class="spocgrid" id="deptMails"><div class="empty">Waiting for tracker data…</div></div>
-  <div style="display:flex;gap:10px;flex-wrap:wrap">
-    <button class="btn amber" id="allDeptPrev">Generate ALL departments mail (combined preview)</button>
+  <p class="note">Select a department — the mail with its pending and delayed tasks is prepared automatically, addressed to that department's SPOCs across all companies.</p>
+  <div class="controls" id="deptMails">
+    <select id="deptSel">
+      <option value="">— Select department —</option>
+      <option value="__ALL__">All departments (combined)</option>
+      <option>R&amp;D</option><option>R&amp;D/PPC</option><option>SCM (Purchase)</option>
+      <option>HO PPC</option><option>Plant PPC</option><option>SAP</option>
+    </select>
+    <span class="note" id="deptInfo"></span>
+    <a class="btn sm" id="deptOutlook" href="#" target="_blank" rel="noopener" style="text-decoration:none;display:none">📧 Send via Outlook</a>
   </div>
   <textarea id="mailBody" placeholder="The follow-up mail will appear here…"></textarea>
 </div>
@@ -644,40 +651,33 @@ tr.ov:hover td{background:var(--red-soft)}
       +(cc?("&cc="+encodeURIComponent(cc)):"")+"&subject="+encodeURIComponent(subject)+"&body="+encodeURIComponent(body.slice(0,6000));
   }
   function renderDeptMails(){
-    var el=document.getElementById("deptMails"); if(!el)return;
-    if(!Object.keys(ITEMS).length){ el.innerHTML='<div class="empty">Waiting for tracker data…</div>'; return }
-    var g="";
-    DEPTS.forEach(function(d,ix){
-      var dd=deptDigest(d);
-      var subj="EAPL MRP Tracker | Pending & Delayed Tasks | "+d+" | "+today();
-      g+='<div class="spoc"><label>'+esc(d)+'</label>'+
-        '<span class="note">'+dd.open+' pending · <b style="color:var(--red)">'+dd.delayed+' delayed</b></span>'+
-        '<div style="display:flex;gap:7px;flex-wrap:wrap">'+
-        '<a class="btn sm" target="_blank" rel="noopener" style="text-decoration:none" href="'+esc(outlookUrl(dd.to,OWNER,subj,dd.text))+'">📧 Send via Outlook</a>'+
-        '<button class="btn ghost sm deptPrev" data-dept="'+esc(d)+'">Preview</button></div></div>';
-    });
-    el.innerHTML=g;
+    // dropdown mode: refresh the current selection's mail from live data
+    var sel=document.getElementById("deptSel");
+    if(sel && sel.value) updateDeptMail(sel.value, false);
   }
-  document.addEventListener("click",function(e){
-    var t=e.target;
-    if(t.classList&&t.classList.contains("deptPrev")){
-      var d=t.getAttribute("data-dept"), dd=deptDigest(d);
-      var subj="EAPL MRP Tracker | Pending & Delayed Tasks | "+d+" | "+today();
-      $("mailBody").value=dd.text;
-      $("mailto").href="mailto:"+encodeURIComponent(dd.to.split(";").join(","))+"?subject="+encodeURIComponent(subj)+"&body="+encodeURIComponent(dd.text.slice(0,1800));
-      setOutlook(dd.to, OWNER, subj, dd.text);
-      try{ $("mailBody").scrollIntoView({behavior:"smooth",block:"center"}) }catch(err){}
-    }
-    if(t.id==="allDeptPrev"){
-      var all=[], tos={};
-      DEPTS.forEach(function(d){ var dd=deptDigest(d); if(dd.open){ all.push("================  "+d+"  ================",dd.text,""); dd.to.split(";").forEach(function(m){ if(m)tos[m]=1 }) } });
+  function updateDeptMail(v, scroll){
+    var dd, subj;
+    if(v==="__ALL__"){
+      var all=[], tos={}, op=0, dl=0;
+      DEPTS.forEach(function(d){ var x=deptDigest(d); op+=x.open; dl+=x.delayed;
+        if(x.open){ all.push("================  "+d+"  ================",x.text,""); x.to.split(";").forEach(function(m){ if(m)tos[m]=1 }) } });
       if(!all.length) all.push("No pending tasks in any department.");
-      var subjA="EAPL MRP Tracker | Department-wise Pending & Delayed Tasks | "+today();
-      $("mailBody").value=all.join("\n");
-      $("mailto").href="mailto:"+encodeURIComponent(Object.keys(tos).join(","))+"?subject="+encodeURIComponent(subjA)+"&body="+encodeURIComponent(all.join("\n").slice(0,1800));
-      setOutlook(Object.keys(tos).join(";"), OWNER, subjA, all.join("\n"));
-      try{ $("mailBody").scrollIntoView({behavior:"smooth",block:"center"}) }catch(err){}
+      dd={text:all.join("\n"), to:Object.keys(tos).join(";"), open:op, delayed:dl};
+      subj="EAPL MRP Tracker | Department-wise Pending & Delayed Tasks | "+today();
+    } else {
+      dd=deptDigest(v);
+      subj="EAPL MRP Tracker | Pending & Delayed Tasks | "+v+" | "+today();
     }
+    $("deptInfo").innerHTML=dd.open+" pending · <b style='color:var(--red)'>"+dd.delayed+" delayed</b>";
+    var ob=$("deptOutlook"); ob.style.display="inline-block"; ob.href=outlookUrl(dd.to,OWNER,subj,dd.text);
+    $("mailBody").value=dd.text;
+    $("mailto").href="mailto:"+encodeURIComponent(dd.to.split(";").join(","))+"?subject="+encodeURIComponent(subj)+"&body="+encodeURIComponent(dd.text.slice(0,1800));
+    setOutlook(dd.to, OWNER, subj, dd.text);
+    if(scroll){ try{ $("mailBody").scrollIntoView({behavior:"smooth",block:"center"}) }catch(err){} }
+  }
+  document.getElementById("deptSel").addEventListener("change",function(){
+    if(!this.value){ $("deptInfo").textContent=""; $("deptOutlook").style.display="none"; return }
+    updateDeptMail(this.value, true);
   });
 
   // Outlook Web compose deeplink — opens the user's Outlook (bhupendra.bisht@eaplworld.com) with the mail pre-filled
