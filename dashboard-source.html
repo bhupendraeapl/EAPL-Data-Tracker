@@ -224,6 +224,21 @@ body::after{filter:none !important;animation:none !important;will-change:auto;in
   box-shadow:0 10px 26px rgba(224,94,18,.18), inset 0 1px 0 rgba(255,255,255,.5)}
 .kpi:hover{border-color:rgba(247,148,29,.8)}
 header.bar{-webkit-backdrop-filter:none;backdrop-filter:none}
+
+/* ===== LITE MODE v2: minimal paint cost ===== */
+.panel::before,.kpi::before,.cocard::before,.deptblk::before{display:none !important}
+.panel,.kpi,.cocard,.deptblk,.tabbtn,.tblwrap,.spoc{
+  box-shadow:0 2px 10px rgba(11,42,74,.10) !important;
+  transition:border-color .15s ease !important}
+.panel:hover,.deptblk:hover,.kpi:hover,.cocard:hover,.tabbtn:hover,.spoc:hover{
+  box-shadow:0 2px 10px rgba(11,42,74,.10) !important}
+.kpi:hover,.panel:hover,.deptblk:hover{border-color:rgba(247,148,29,.8)}
+.cocard:hover{border-color:rgba(29,95,191,.8)}
+.tabbtn:hover{border-color:rgba(247,148,29,.8)}
+.btn{box-shadow:none}
+body::after{display:none}
+body{background:linear-gradient(160deg,var(--bg) 0%,var(--bg) 55%, rgba(247,148,29,.07) 100%), var(--bg)}
+.glassy{box-shadow:0 2px 10px rgba(11,42,74,.10)}
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.min.js"></script>
@@ -905,6 +920,9 @@ header.bar{-webkit-backdrop-filter:none;backdrop-filter:none}
         var n=Object.keys(ITEMS).length;
         $("liveState").textContent=n+" tasks";
         try{ renderDeptMails() }catch(e2){}
+        // don't redraw while the user is typing in a field — avoids lag and lost focus
+        var ae=document.activeElement;
+        if(ae && (ae.tagName==="INPUT"||ae.tagName==="TEXTAREA") && ae.closest && (ae.closest("#tbl")||ae.closest("#spocgrid")||ae.closest("#coBody"))) return;
         if(n) render();
       }
       async function loadItems(){
