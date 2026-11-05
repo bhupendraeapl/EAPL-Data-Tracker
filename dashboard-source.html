@@ -48,7 +48,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 header .t{display:flex;flex-direction:column;gap:2px}
 header .t b{font-size:17px;letter-spacing:1px}
 header .t span{font-size:12px;color:#F2B45C;letter-spacing:2px;text-transform:uppercase}
-header .live{margin-left:auto;font-size:12px;color:#F2B45C}
+header .live{margin-left:auto;font-size:10.5px;color:#F2B45C;opacity:.9}
 .btn{background:linear-gradient(135deg,#F7941D,#E05E12);color:#fff;border:none;border-radius:8px;padding:9px 16px;font:inherit;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 6px 16px rgba(224,94,18,.3)}
 .btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
 .btn.amber{background:var(--amber);color:#fff}
@@ -168,7 +168,7 @@ tr.ov:hover td{background:var(--red-soft)}
 <header class="bar">
   <div class="t"><b>EASTMAN · MRP REQUIRED DATA TRACKER</b><span>Format-wise tracking · ENEPL · EPTPL · EGTPL · EAPL (LAB) · Project owner: Bhupendra Bisht</span></div>
   <div class="live" id="liveState">connecting…</div>
-  <button class="btn ghost" id="themeBtn" style="color:var(--head-ink);border-color:rgba(255,228,184,.45);background:transparent;box-shadow:none">☀/☾</button>
+  <button class="btn ghost" id="themeBtn" style="color:var(--head-ink);border-color:rgba(255,228,184,.45);background:transparent;box-shadow:none;padding:4px 9px;font-size:11px">☀/☾</button>
 </header>
 
 <div class="tabs" id="tabs">
@@ -491,6 +491,14 @@ tr.ov:hover td{background:var(--red-soft)}
       db.doc("contacts/spoc").set(SPOC).catch(function(){});
     }
   });
+  // auto-save remarks while typing (debounced) — no need to click away
+  var rmkTimers={};
+  document.addEventListener("input",function(e){
+    var t=e.target; if(!t.classList||!t.classList.contains("rmk"))return;
+    var id=t.getAttribute("data-id"); if(!id)return;
+    clearTimeout(rmkTimers[id]);
+    rmkTimers[id]=setTimeout(function(){ saveItem(id,{remarks:t.value}) },800);
+  });
   function saveItem(id,patch){
     db.doc("items/"+id).update(patch).then(function(){ flash("✓ Saved automatically") }).catch(function(){ flash("⚠ Could not save — check connection") });
   }
@@ -672,11 +680,11 @@ tr.ov:hover td{background:var(--red-soft)}
       }
       var user=null; try{ user = await window.claude.use("user") }catch(eu){}
       canWrite = user ? user.canEdit() : false;
-      $("liveState").textContent = canWrite ? "live · editing enabled" : "live · view only";
+      $("liveState").textContent = "●";
       function applyItems(snap){
         ITEMS={}; snap.docs.forEach(function(d){ ITEMS[d.id]= (typeof d.data==="function")?d.data():d.data });
         var n=Object.keys(ITEMS).length;
-        $("liveState").textContent=(canWrite?"live · editing enabled":"live · view only")+" · "+n+" tasks";
+        $("liveState").textContent=n+" tasks";
         if(n) render();
       }
       async function loadItems(){
@@ -684,7 +692,7 @@ tr.ov:hover td{background:var(--red-soft)}
           try{
             var s=await db.collection("items").limit(1000).get();
             if(s && s.docs && s.docs.length){ applyItems(s); return }
-            $("liveState").textContent="live · loaded 0 tasks (try "+(a+1)+")";
+            $("liveState").textContent="loading… ("+(a+1)+")";
           }catch(e1){ $("liveState").textContent="items read error: "+((e1&&e1.code)||e1); }
           await new Promise(function(r){setTimeout(r,1200)});
         }
