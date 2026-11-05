@@ -1,25 +1,27 @@
 <title>EAPL MRP Data Tracker</title>
 <meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
 /* Theme 2: emerald + amber on soft mint / deep forest. Layout: brand bar, KPI row, charts, format-wise tracker table, SPOC & mail panel */
 :root{
-  --bg:#F4F2FC; --surface:rgba(255,255,255,0.72); --ink:#231A4F; --muted:#6B648F; --line:rgba(60,40,140,0.16);
-  --em:#0E9E86; --em-soft:rgba(14,158,134,.12); --amber:#C2660A; --amber-soft:rgba(194,102,10,.12); --red:#D8503F; --red-soft:rgba(216,80,63,.12);
-  --blue:#4F63D2; --blue-soft:rgba(79,99,210,.12); --head:rgba(32,20,76,0.9); --head-ink:#F2EFFF;
-  --au1:rgba(120,90,255,.25); --au2:rgba(45,212,191,.22); --au3:rgba(255,107,94,.16);
+  --bg:#F7F4ED; --surface:rgba(255,255,255,0.82); --ink:#122A42; --muted:#5B6B7E; --line:rgba(18,42,66,0.15);
+  --em:#0E8A5F; --em-soft:rgba(14,138,95,.12); --amber:#E07B00; --amber-soft:rgba(224,123,0,.12); --red:#D64545; --red-soft:rgba(214,69,69,.12);
+  --blue:#1D5FBF; --blue-soft:rgba(29,95,191,.12); --head:#0B2A4A; --head-ink:#FFF4E2;
+  --au1:rgba(247,148,29,.22); --au2:rgba(29,95,191,.16); --au3:rgba(255,197,66,.20);
 }
 @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
-  --bg:#120D2B; --surface:rgba(255,255,255,0.065); --ink:#F2EFFF; --muted:#ABA4CE; --line:rgba(255,255,255,0.16);
-  --em:#2DD4BF; --em-soft:rgba(45,212,191,.14); --amber:#FFB357; --amber-soft:rgba(255,179,87,.14); --red:#FF6B5E; --red-soft:rgba(255,107,94,.16);
-  --blue:#8FA7FF; --blue-soft:rgba(143,167,255,.14); --head:rgba(16,10,40,0.75); --head-ink:#F2EFFF;
-  --au1:rgba(120,90,255,.4); --au2:rgba(45,212,191,.28); --au3:rgba(255,107,94,.22); color-scheme:dark }}
+  --bg:#0A1A2E; --surface:rgba(255,255,255,0.07); --ink:#F3EFE4; --muted:#9FB0C3; --line:rgba(255,255,255,0.16);
+  --em:#34D399; --em-soft:rgba(52,211,153,.14); --amber:#FFA940; --amber-soft:rgba(255,169,64,.15); --red:#FF7A6B; --red-soft:rgba(255,122,107,.16);
+  --blue:#6FA8FF; --blue-soft:rgba(111,168,255,.14); --head:rgba(5,18,36,0.82); --head-ink:#FFE4B8;
+  --au1:rgba(247,148,29,.30); --au2:rgba(45,110,220,.30); --au3:rgba(255,197,66,.18); color-scheme:dark }}
 :root[data-theme="dark"]{
-  --bg:#120D2B; --surface:rgba(255,255,255,0.065); --ink:#F2EFFF; --muted:#ABA4CE; --line:rgba(255,255,255,0.16);
-  --em:#2DD4BF; --em-soft:rgba(45,212,191,.14); --amber:#FFB357; --amber-soft:rgba(255,179,87,.14); --red:#FF6B5E; --red-soft:rgba(255,107,94,.16);
-  --blue:#8FA7FF; --blue-soft:rgba(143,167,255,.14); --head:rgba(16,10,40,0.75); --head-ink:#F2EFFF;
-  --au1:rgba(120,90,255,.4); --au2:rgba(45,212,191,.28); --au3:rgba(255,107,94,.22); color-scheme:dark }
+  --bg:#0A1A2E; --surface:rgba(255,255,255,0.07); --ink:#F3EFE4; --muted:#9FB0C3; --line:rgba(255,255,255,0.16);
+  --em:#34D399; --em-soft:rgba(52,211,153,.14); --amber:#FFA940; --amber-soft:rgba(255,169,64,.15); --red:#FF7A6B; --red-soft:rgba(255,122,107,.16);
+  --blue:#6FA8FF; --blue-soft:rgba(111,168,255,.14); --head:rgba(5,18,36,0.82); --head-ink:#FFE4B8;
+  --au1:rgba(247,148,29,.30); --au2:rgba(45,110,220,.30); --au3:rgba(255,197,66,.18); color-scheme:dark }
 [hidden]{display:none !important}
-body{background:var(--bg);color:var(--ink);font-family:"Segoe UI",system-ui,Arial,sans-serif;
+body{background:var(--bg);color:var(--ink);font-family:"Plus Jakarta Sans","Segoe UI",system-ui,Arial,sans-serif;
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0}
 body::after{content:"";position:fixed;inset:-25%;z-index:-1;pointer-events:none;filter:blur(80px);
   background:radial-gradient(40% 40% at 15% 10%, var(--au1), transparent 70%),
@@ -37,7 +39,7 @@ body::after{content:"";position:fixed;inset:-25%;z-index:-1;pointer-events:none;
   box-shadow:0 18px 44px rgba(10,5,40,.25), inset 0 1px 0 rgba(255,255,255,.14)}
 .wrap{max-width:min(1720px,97vw);margin:0 auto;display:flex;flex-direction:column;gap:20px;padding-block:16px 48px}
 h1,h2,h3{margin:0;text-wrap:balance}
-header.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:10;background:var(--head);color:var(--head-ink);
+header.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:10;background:linear-gradient(120deg,#0B2A4A 0%,#15406E 62%,#8A4A07 130%);color:var(--head-ink);
   border-radius:14px;padding:12px 18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;border:1px solid var(--line);
   -webkit-backdrop-filter:blur(18px) saturate(1.5);backdrop-filter:blur(18px) saturate(1.5)}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:11;background:var(--bg)}
@@ -45,15 +47,15 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .bolt svg{width:22px;height:22px}
 header .t{display:flex;flex-direction:column;gap:2px}
 header .t b{font-size:17px;letter-spacing:1px}
-header .t span{font-size:12px;color:#9DB8AC;letter-spacing:2px;text-transform:uppercase}
-header .live{margin-left:auto;font-size:12px;color:#9DB8AC}
-.btn{background:var(--em);color:#fff;border:none;border-radius:8px;padding:9px 16px;font:inherit;font-size:14px;font-weight:600;cursor:pointer}
+header .t span{font-size:12px;color:#F2B45C;letter-spacing:2px;text-transform:uppercase}
+header .live{margin-left:auto;font-size:12px;color:#F2B45C}
+.btn{background:linear-gradient(135deg,#F7941D,#E05E12);color:#fff;border:none;border-radius:8px;padding:9px 16px;font:inherit;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 6px 16px rgba(224,94,18,.3)}
 .btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
 .btn.amber{background:var(--amber);color:#fff}
 .btn:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--em);outline-offset:1px}
 .tabs{display:flex;gap:8px;flex-wrap:wrap}
 .tabbtn{background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:999px;padding:9px 18px;font:inherit;font-size:13.5px;font-weight:600;cursor:pointer}
-.tabbtn.on{background:var(--em);color:#fff;border-color:var(--em)}
+.tabbtn.on{background:linear-gradient(135deg,#0B2A4A,#1D5FBF);color:#FFE4B8;border-color:#1D5FBF}
 .deptblk{border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:14px;display:flex;flex-direction:column;gap:10px}
 .deptblk .dh{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
 .deptblk .dh b{font-size:15px;color:var(--em)}
@@ -125,7 +127,7 @@ a.btnlink{display:inline-block;background:var(--blue);color:#fff;border-radius:8
 <header class="bar">
   <div class="t"><b>EASTMAN · MRP REQUIRED DATA TRACKER</b><span>Format-wise tracking · ENEPL · EPTPL · EGTPL · EAPL (LAB) · Project owner: Bhupendra Bisht</span></div>
   <div class="live" id="liveState">connecting…</div>
-  <button class="btn ghost" id="themeBtn" style="color:var(--head-ink);border-color:#3A4F45">☀/☾</button>
+  <button class="btn ghost" id="themeBtn" style="color:var(--head-ink);border-color:rgba(255,228,184,.45);background:transparent;box-shadow:none">☀/☾</button>
 </header>
 
 <div class="tabs" id="tabs">
