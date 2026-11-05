@@ -561,7 +561,7 @@ header.bar{-webkit-backdrop-filter:none;backdrop-filter:none}
     [].slice.call($("tabs").children).forEach(function(x){ x.classList.toggle("on",x===b) });
     $("coView").hidden = (VIEW==="summary");
     $("mailPanel").hidden = (VIEW==="summary") || !canWrite; // mails & downloads: admin only
-    try{ $("mailPanel").classList.toggle("locked", sessionStorage.getItem("trk-mail-unlocked")!=="1") }catch(elk){}
+    try{ $("mailPanel").classList.toggle("locked", localStorage.getItem("trk-mail-unlocked")!=="1") }catch(elk){}
     [].slice.call(document.querySelectorAll(".sumOnly")).forEach(function(p){ p.hidden = (VIEW!=="summary") });
     renderSpoc();
     render();
@@ -605,7 +605,7 @@ header.bar{-webkit-backdrop-filter:none;backdrop-filter:none}
   $("lockBtn").addEventListener("click",function(){
     sha256Hex($("lockPass").value).then(function(h){
       if(h===LOCK_HASH){
-        try{ sessionStorage.setItem("trk-mail-unlocked","1") }catch(e){}
+        try{ localStorage.setItem("trk-mail-unlocked","1") }catch(e){}
         $("mailPanel").classList.remove("locked"); $("lockPass").value="";
       } else { $("lockMsg").textContent="Wrong password"; setTimeout(function(){$("lockMsg").textContent=""},3000) }
     }).catch(function(){ $("lockMsg").textContent="Unlock not supported in this browser" });
