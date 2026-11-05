@@ -204,6 +204,23 @@ tr.ov:hover td{background:var(--red-soft)}
 :root[data-theme="dark"] .panel,:root[data-theme="dark"] .kpi,:root[data-theme="dark"] .cocard,:root[data-theme="dark"] .deptblk,:root[data-theme="dark"] .tabbtn,:root[data-theme="dark"] .tblwrap,:root[data-theme="dark"] .spoc{
   border-color:rgba(255,255,255,.2);
   box-shadow:0 18px 40px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.22), inset 0 -18px 34px rgba(255,255,255,.04)}
+
+/* ===== PERFORMANCE MODE: kill all GPU-heavy effects, keep the glass look ===== */
+:root{--surface:rgba(255,255,255,.88)}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){--surface:rgba(23,38,60,.92)}}
+:root[data-theme="dark"]{--surface:rgba(23,38,60,.92)}
+*, *::before, *::after{-webkit-backdrop-filter:none !important;backdrop-filter:none !important}
+body::after{filter:none !important;animation:none !important;will-change:auto;inset:0;
+  background:radial-gradient(55% 55% at 12% 8%, var(--au1), transparent 72%),
+             radial-gradient(50% 50% at 88% 22%, var(--au2), transparent 72%),
+             radial-gradient(50% 50% at 45% 95%, var(--au3), transparent 72%)}
+.wrap>*{animation:none !important}
+.panel,.kpi,.cocard,.deptblk,.tabbtn,.tblwrap,.spoc{transition:border-color .2s ease, background .2s ease;
+  box-shadow:0 8px 22px rgba(11,42,74,.12), inset 0 1px 0 rgba(255,255,255,.5)}
+.panel:hover,.deptblk:hover,.kpi:hover,.cocard:hover,.tabbtn:hover{transform:none !important;
+  box-shadow:0 10px 26px rgba(224,94,18,.18), inset 0 1px 0 rgba(255,255,255,.5)}
+.kpi:hover{border-color:rgba(247,148,29,.8)}
+header.bar{-webkit-backdrop-filter:none;backdrop-filter:none}
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.min.js"></script>
