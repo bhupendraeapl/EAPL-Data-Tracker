@@ -295,6 +295,12 @@ tr.ov:hover td{background:var(--red-soft)}
     <a class="btn" id="outlookBtn" href="#" target="_blank" rel="noopener" style="text-decoration:none;display:inline-block">📧 Send via Outlook</a>
     <a class="btn ghost" id="mailto" href="#" style="text-decoration:none;display:inline-block">Open in mail app</a>
   </div>
+  <h2 style="margin-top:6px">Department-wise follow-up mails</h2>
+  <p class="note">Each department gets its own mail listing its pending and delayed tasks — sent to that department's SPOCs across all companies.</p>
+  <div class="spocgrid" id="deptMails"><div class="empty">Waiting for tracker data…</div></div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap">
+    <button class="btn amber" id="allDeptPrev">Generate ALL departments mail (combined preview)</button>
+  </div>
   <textarea id="mailBody" placeholder="The follow-up mail will appear here…"></textarea>
   <p class="note">A web page cannot send mail by itself on a timer. The overdue mail is generated automatically from live data — one click to send. For true automatic sending, ask Claude to set up a scheduled routine.</p>
 </div>
@@ -570,6 +576,7 @@ tr.ov:hover td{background:var(--red-soft)}
         '<input type="email" data-spoc="'+esc(k)+'" data-f="mail" placeholder="mail@eaplworld.com" value="'+esc(v.mail||"")+'"'+(canWrite?"":" disabled")+'></div>';
     });
     $("spocgrid").innerHTML=g;
+    try{ renderDeptMails() }catch(e3){}
   }
 
   $("saveSched").addEventListener("click",function(){
@@ -605,6 +612,67 @@ tr.ov:hover td{background:var(--red-soft)}
       "Regards,","Bhupendra Bisht","Project Owner — Centralized MRP","Eastman Auto & Power Ltd");
     return {text:lines.join("\n"), to:Object.keys(mails).join(",")};
   }
+  // ----- department-wise follow-up mails -----
+  var DEPTS=["R&D","R&D/PPC","SCM (Purchase)","HO PPC","Plant PPC","SAP"];
+  function deptDigest(dept){
+    var open=Object.keys(ITEMS).map(function(k){return ITEMS[k]}).filter(function(i){ return i.dept===dept && i.status!=="Done" });
+    var delayed=open.filter(isOver);
+    var mails={}, names={};
+    open.forEach(function(i){ spocKeys(i.company,i.dept).forEach(function(k){ var v=SPOC[k]||{}; if(v.mail)mails[v.mail]=1; if(v.name)names[v.name]=1 }) });
+    var lines=["Dear Team,","",
+      "Please find below the pending and delayed MRP required data tasks for the "+dept+" department as on "+today()+":",""];
+    ["ENEPL","EPTPL","EGTPL","EAPL (LAB)"].forEach(function(co){
+      var cl=open.filter(function(i){return i.company===co}); if(!cl.length)return;
+      lines.push(co+":");
+      cl.forEach(function(i){ lines.push("   • ["+fmtOf(i.item)+"] "+i.item+" — "+i.status+(i.target?(", target "+i.target):"")+(isOver(i)?"  ** DELAYED **":"")) });
+      lines.push("");
+    });
+    if(!open.length) lines.push("No pending tasks — all tasks are completed. Well done!","");
+    else lines.push("You are requested to complete the pending tasks on or before their target dates and close the delayed tasks on priority. Kindly update the status in the EAPL MRP Data Tracker dashboard once done.","");
+    lines.push("Regards,","Bhupendra Bisht","Project Owner — Centralized MRP","Eastman Auto & Power Ltd");
+    return {text:lines.join("\n"), to:Object.keys(mails).join(";"), open:open.length, delayed:delayed.length};
+  }
+  function outlookUrl(to, cc, subject, body){
+    return "https://outlook.office.com/mail/deeplink/compose?to="+encodeURIComponent(to)
+      +(cc?("&cc="+encodeURIComponent(cc)):"")+"&subject="+encodeURIComponent(subject)+"&body="+encodeURIComponent(body.slice(0,6000));
+  }
+  function renderDeptMails(){
+    var el=document.getElementById("deptMails"); if(!el)return;
+    if(!Object.keys(ITEMS).length){ el.innerHTML='<div class="empty">Waiting for tracker data…</div>'; return }
+    var g="";
+    DEPTS.forEach(function(d,ix){
+      var dd=deptDigest(d);
+      var subj="EAPL MRP Tracker | Pending & Delayed Tasks | "+d+" | "+today();
+      g+='<div class="spoc"><label>'+esc(d)+'</label>'+
+        '<span class="note">'+dd.open+' pending · <b style="color:var(--red)">'+dd.delayed+' delayed</b></span>'+
+        '<div style="display:flex;gap:7px;flex-wrap:wrap">'+
+        '<a class="btn sm" target="_blank" rel="noopener" style="text-decoration:none" href="'+esc(outlookUrl(dd.to,OWNER,subj,dd.text))+'">📧 Send via Outlook</a>'+
+        '<button class="btn ghost sm deptPrev" data-dept="'+esc(d)+'">Preview</button></div></div>';
+    });
+    el.innerHTML=g;
+  }
+  document.addEventListener("click",function(e){
+    var t=e.target;
+    if(t.classList&&t.classList.contains("deptPrev")){
+      var d=t.getAttribute("data-dept"), dd=deptDigest(d);
+      var subj="EAPL MRP Tracker | Pending & Delayed Tasks | "+d+" | "+today();
+      $("mailBody").value=dd.text;
+      $("mailto").href="mailto:"+encodeURIComponent(dd.to.split(";").join(","))+"?subject="+encodeURIComponent(subj)+"&body="+encodeURIComponent(dd.text.slice(0,1800));
+      setOutlook(dd.to, OWNER, subj, dd.text);
+      try{ $("mailBody").scrollIntoView({behavior:"smooth",block:"center"}) }catch(err){}
+    }
+    if(t.id==="allDeptPrev"){
+      var all=[], tos={};
+      DEPTS.forEach(function(d){ var dd=deptDigest(d); if(dd.open){ all.push("================  "+d+"  ================",dd.text,""); dd.to.split(";").forEach(function(m){ if(m)tos[m]=1 }) } });
+      if(!all.length) all.push("No pending tasks in any department.");
+      var subjA="EAPL MRP Tracker | Department-wise Pending & Delayed Tasks | "+today();
+      $("mailBody").value=all.join("\n");
+      $("mailto").href="mailto:"+encodeURIComponent(Object.keys(tos).join(","))+"?subject="+encodeURIComponent(subjA)+"&body="+encodeURIComponent(all.join("\n").slice(0,1800));
+      setOutlook(Object.keys(tos).join(";"), OWNER, subjA, all.join("\n"));
+      try{ $("mailBody").scrollIntoView({behavior:"smooth",block:"center"}) }catch(err){}
+    }
+  });
+
   // Outlook Web compose deeplink — opens the user's Outlook (bhupendra.bisht@eaplworld.com) with the mail pre-filled
   function setOutlook(to, cc, subject, body){
     $("outlookBtn").href="https://outlook.office.com/mail/deeplink/compose?to="+encodeURIComponent(to)
@@ -735,6 +803,7 @@ tr.ov:hover td{background:var(--red-soft)}
         ITEMS={}; snap.docs.forEach(function(d){ ITEMS[d.id]= (typeof d.data==="function")?d.data():d.data });
         var n=Object.keys(ITEMS).length;
         $("liveState").textContent=n+" tasks";
+        try{ renderDeptMails() }catch(e2){}
         if(n) render();
       }
       async function loadItems(){
