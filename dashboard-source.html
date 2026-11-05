@@ -23,7 +23,7 @@
 [hidden]{display:none !important}
 body{background:var(--bg);color:var(--ink);font-family:"Plus Jakarta Sans","Segoe UI",system-ui,Arial,sans-serif;
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0}
-body::after{content:"";position:fixed;inset:-25%;z-index:-1;pointer-events:none;filter:blur(80px);
+body::after{content:"";position:fixed;inset:-25%;z-index:-1;pointer-events:none;filter:blur(60px);will-change:transform;
   background:radial-gradient(40% 40% at 15% 10%, var(--au1), transparent 70%),
              radial-gradient(35% 35% at 85% 25%, var(--au2), transparent 70%),
              radial-gradient(35% 35% at 45% 90%, var(--au3), transparent 70%)}
@@ -176,7 +176,7 @@ tr.ov:hover td{background:var(--red-soft)}
 :root[data-theme="dark"]{--surface:rgba(255,255,255,0.08)}
 .panel,.kpi,.cocard,.deptblk,.tabbtn,.tblwrap,.spoc{
   position:relative;overflow:hidden;
-  -webkit-backdrop-filter:blur(22px) saturate(1.7);backdrop-filter:blur(22px) saturate(1.7);
+  -webkit-backdrop-filter:blur(12px) saturate(1.6);backdrop-filter:blur(12px) saturate(1.6);
   border:1px solid rgba(255,255,255,.55);
   box-shadow:0 18px 40px rgba(11,42,74,.16), inset 0 1px 0 rgba(255,255,255,.75), inset 0 -18px 34px rgba(255,255,255,.14)}
 .panel::before,.kpi::before,.cocard::before,.deptblk::before{
@@ -184,6 +184,8 @@ tr.ov:hover td{background:var(--red-soft)}
   background:linear-gradient(160deg,rgba(255,255,255,.5) 0%,rgba(255,255,255,.12) 28%,transparent 55%,rgba(255,255,255,.1) 100%)}
 .panel>*,.kpi>*,.cocard>*,.deptblk>*{position:relative;z-index:1}
 .tabbtn{background:var(--surface);box-shadow:0 10px 24px rgba(11,42,74,.14), inset 0 1px 0 rgba(255,255,255,.7)}
+/* perf: no backdrop blur on the scrolling table and small repeated boxes */
+.tblwrap,.spoc{-webkit-backdrop-filter:none;backdrop-filter:none}
 .tabbtn:hover{transform:translateY(-2px);transition:transform .25s ease}
 .tabbtn.on{border-color:rgba(255,255,255,.35);box-shadow:0 12px 28px rgba(11,42,74,.35), inset 0 1px 0 rgba(255,255,255,.35)}
 .spoc{background:var(--surface)}
@@ -338,7 +340,7 @@ tr.ov:hover td{background:var(--red-soft)}
   var FMT={
     "Model-to-FG mapping":"01 Model-FG Mapping","BOM structure":"02 BOM Structure","Alternate RM mapping":"03 Alternate RM Mapping",
     "Vendor-wise SOB / quota":"04 Vendor SOB Quota","Model & FG code wise MOQ":"05 Model-FG MOQ","Capacity planning (FG/SFG)":"06 Capacity Planning",
-    "FG source (in-house / outsource)":"07 FG-SFG Source","FG buffer stock (part code-wise)":"08 FG Buffer Stock",
+    "FG source (in-house / outsource)":"07 FG-SFG Source","SFG source (in-house / outsource)":"07 FG-SFG Source","FG buffer stock (part code-wise)":"08 FG Buffer Stock",
     "RM buffer stock (part code-wise)":"09 RM Buffer Stock","RM lead time (part code-wise)":"10 RM Lead Time",
     "RM MOQ (part code-wise)":"11 RM MOQ","Master data management":"12 Master Data Mgmt"
   };
@@ -804,7 +806,7 @@ tr.ov:hover td{background:var(--red-soft)}
         return;
       }
       var user=null; try{ user = await window.claude.use("user") }catch(eu){}
-      canWrite = user ? user.canEdit() : false;
+      canWrite=false; try{ canWrite = !!(user && typeof user.canEdit==="function" ? user.canEdit() : (user&&user.canWrite)) }catch(ec){}
       $("liveState").textContent = "●";
       function applyItems(snap){
         ITEMS={}; snap.docs.forEach(function(d){ ITEMS[d.id]= (typeof d.data==="function")?d.data():d.data });
@@ -826,8 +828,10 @@ tr.ov:hover td{background:var(--red-soft)}
       loadItems();
       try{ var sp0=await db.doc("contacts/spoc").get(); if(sp0&&sp0.exists){ SPOC=(typeof sp0.data==="function")?sp0.data():sp0.data; renderSpoc(); render(); } }catch(e2){}
       db.collection("items").onSnapshot(applyItems, function(err){ $("liveState").textContent="items subscription error: "+((err&&err.code)||err) });
-      db.doc("contacts/spoc").onSnapshot(function(d){ SPOC=d.exists?((typeof d.data==="function")?d.data():d.data):{}; renderSpoc(); render(); }, function(){});
-      db.doc("settings/mail").onSnapshot(function(d){ if(d.exists){ SCHED=(typeof d.data==="function")?d.data():d.data; $("sFreq").value=SCHED.freq||"daily"; $("sTime").value=SCHED.time||"09:00" } });
+      function cloneSpoc(raw){ var o={}; Object.keys(raw||{}).forEach(function(k){ o[k]=Object.assign({}, raw[k]) }); return o }
+      try{ db.doc("contacts/spoc").onSnapshot(function(d){ SPOC=cloneSpoc(d.exists?((typeof d.data==="function")?d.data():d.data):{}); renderSpoc(); render(); }, function(){}); }
+      catch(es){ try{ var ds=await db.doc("contacts/spoc").get(); if(ds.exists) SPOC=cloneSpoc((typeof ds.data==="function")?ds.data():ds.data); renderSpoc(); render(); }catch(es2){} }
+      try{ db.doc("settings/mail").onSnapshot(function(d){ if(d.exists){ SCHED=(typeof d.data==="function")?d.data():d.data; $("sFreq").value=SCHED.freq||"daily"; $("sTime").value=SCHED.time||"09:00" } }); }catch(em){}
     }catch(e){
       $("liveState").textContent="connection error";
       $("tbody").innerHTML='<tr><td colspan="9" class="empty">Could not connect to the tracker data — reload the page. ('+esc(e&&e.message||e)+')</td></tr>';
