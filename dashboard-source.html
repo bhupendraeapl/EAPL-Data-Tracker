@@ -1,4 +1,4 @@
-﻿<title>EAPL MRP Data Tracker</title>
+<title>EAPL MRP Data Tracker</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -121,6 +121,9 @@ textarea{width:100%;box-sizing:border-box;min-height:150px;background:var(--bg);
 .saved{font-size:12.5px;color:var(--em);min-height:16px}
 .empty{padding:28px;text-align:center;color:var(--muted);font-size:14px}
 a.btnlink{display:inline-block;background:var(--blue);color:#fff;border-radius:8px;padding:9px 16px;font-size:14px;font-weight:600;text-decoration:none}
+#lockScr{display:none}
+#mailPanel.locked>*:not(#lockScr){display:none !important}
+#mailPanel.locked #lockScr{display:flex}
 .rmkExp{background:var(--blue-soft);color:var(--blue);border:1px solid var(--line);border-radius:6px;padding:4px 7px;font:inherit;font-size:13px;cursor:pointer;vertical-align:middle}
 .rmkExp:hover{background:var(--blue);color:#fff}
 #rmkModal{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;background:rgba(5,15,30,.55);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);padding:16px}
@@ -300,6 +303,17 @@ header.bar{-webkit-backdrop-filter:none;backdrop-filter:none}
 </div>
 
 <div class="panel" id="mailPanel" hidden>
+  <div id="lockScr" style="flex-direction:column;gap:12px;align-items:center;padding:26px;text-align:center">
+    <div style="font-size:34px">🔒</div>
+    <h2 style="margin:0">Mail &amp; SPOC section is locked</h2>
+    <p class="note" style="margin:0">Enter the admin password to edit SPOC mail IDs and send follow-up mails.</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">
+      <input type="password" id="lockPass" placeholder="Password" style="min-width:200px">
+      <button class="btn" id="lockBtn">Unlock</button>
+    </div>
+    <span class="saved" id="lockMsg" style="color:var(--red)"></span>
+    <a href="mailto:bhupendra.bisht@eaplworld.com?subject=EAPL%20MRP%20Tracker%20%7C%20Password%20Request&body=Dear%20Sir%2C%0A%0AI%20need%20access%20to%20the%20mail%20%26%20SPOC%20section%20of%20the%20EAPL%20MRP%20Data%20Tracker.%20Kindly%20share%20the%20admin%20password%20or%20reset%20it%20for%20me.%0A%0ARegards" style="font-size:12.5px;color:var(--blue)">Forgot password? Request it from the project owner (bhupendra.bisht@eaplworld.com)</a>
+  </div>
   <h2>SPOC mail IDs — company &amp; department wise</h2>
   <p class="note">The follow-up mail goes to these SPOCs. Edit any box — saved for all viewers.</p>
   <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
@@ -547,6 +561,7 @@ header.bar{-webkit-backdrop-filter:none;backdrop-filter:none}
     [].slice.call($("tabs").children).forEach(function(x){ x.classList.toggle("on",x===b) });
     $("coView").hidden = (VIEW==="summary");
     $("mailPanel").hidden = (VIEW==="summary") || !canWrite; // mails & downloads: admin only
+    try{ $("mailPanel").classList.toggle("locked", sessionStorage.getItem("trk-mail-unlocked")!=="1") }catch(elk){}
     [].slice.call(document.querySelectorAll(".sumOnly")).forEach(function(p){ p.hidden = (VIEW!=="summary") });
     renderSpoc();
     render();
@@ -583,6 +598,20 @@ header.bar{-webkit-backdrop-filter:none;backdrop-filter:none}
       db.doc("contacts/spoc").set(SPOC).catch(function(){});
     }
   });
+  // password lock for the mail & SPOC section
+  // only a SHA-256 hash is stored; the password itself is never in this page
+  var LOCK_HASH="8c5511bdf367ccbd2d54bccb09558219644a9daa1bdf7db31ce5b7c968e4c59a";
+  async function sha256Hex(s){ var b=await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)); return Array.from(new Uint8Array(b)).map(function(x){return x.toString(16).padStart(2,"0")}).join("") }
+  $("lockBtn").addEventListener("click",function(){
+    sha256Hex($("lockPass").value).then(function(h){
+      if(h===LOCK_HASH){
+        try{ sessionStorage.setItem("trk-mail-unlocked","1") }catch(e){}
+        $("mailPanel").classList.remove("locked"); $("lockPass").value="";
+      } else { $("lockMsg").textContent="Wrong password"; setTimeout(function(){$("lockMsg").textContent=""},3000) }
+    }).catch(function(){ $("lockMsg").textContent="Unlock not supported in this browser" });
+  });
+  $("lockPass").addEventListener("keydown",function(e){ if(e.key==="Enter") $("lockBtn").click() });
+
   // full-screen remarks editor
   var rmkId=null;
   document.addEventListener("click",function(e){
