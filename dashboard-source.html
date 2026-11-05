@@ -120,6 +120,7 @@ textarea{width:100%;box-sizing:border-box;min-height:150px;background:var(--bg);
 a.btnlink{display:inline-block;background:var(--blue);color:#fff;border-radius:8px;padding:9px 16px;font-size:14px;font-weight:600;text-decoration:none}
 </style>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <div class="wrap">
 <header class="bar">
   <div class="bolt"><svg viewBox="0 0 24 24" aria-label=""><path d="M13 2 4 14h6l-2 8 9-12h-6l2-8z" fill="#fff"/></svg></div>
@@ -199,8 +200,11 @@ a.btnlink{display:inline-block;background:var(--blue);color:#fff;border-radius:8
 <div class="panel" id="mailPanel" hidden>
   <h2>SPOC mail IDs — company &amp; department wise</h2>
   <p class="note">The follow-up mail goes to these SPOCs. Edit any box — saved for all viewers.</p>
-  <div><a class="btnlink" id="dlFmt" href="#" download="EAPL_MRP_Format.xlsx">⬇ Download data formats (Excel)</a>
-  <span class="note" style="margin-left:8px">All 14 format tabs in one Excel file.</span></div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+    <button class="btn" id="dlTrk">⬇ Download tracker report (Excel)</button>
+    <a class="btnlink" id="dlFmt" href="#" download="EAPL_MRP_Format.xlsx">⬇ Blank data formats (Excel)</a>
+    <span class="note">Tracker report = live data: all companies + one sheet per company + SPOC list.</span>
+  </div>
   <div class="spocgrid" id="spocgrid"></div>
   <div class="sched">
     <label>Reminder frequency
@@ -550,6 +554,55 @@ a.btnlink{display:inline-block;background:var(--blue);color:#fff;border-radius:8
     })();
   });
 
+  // professional tracker export (live data -> real .xlsx)
+  $("dlTrk").addEventListener("click",function(){
+    (async function(){
+      try{
+        if(typeof XLSX==="undefined"){ flash("Excel library not loaded — reload the page"); return }
+        var list=Object.keys(ITEMS).map(function(k){ return Object.assign({_id:k}, ITEMS[k]) });
+        if(!list.length){ flash("No data loaded yet"); return }
+        list.sort(function(a,b){ if(a.company!==b.company)return a.company<b.company?-1:1; if(a.dept!==b.dept)return a.dept<b.dept?-1:1; return fmtOf(a.item)<fmtOf(b.item)?-1:1 });
+        var head=["Sr No","Company","Format","Requirement","Department","SPOC Name","SPOC Mail ID","Stage","Target Date","Prev Target","Completed On","Overdue","Remarks"];
+        function rowsOf(arr){
+          return arr.map(function(i,ix){
+            var sp=spocOf(i.company,i.dept);
+            return [ix+1, i.company, fmtOf(i.item), i.item, i.dept, sp.names.join(", "), sp.mails.join(", "),
+              i.status, i.target||"", i.prevTarget||"", i.closed||"", isOver(i)?"YES":"", i.remarks||""];
+          });
+        }
+        var wb=XLSX.utils.book_new();
+        var cols=[{wch:6},{wch:12},{wch:22},{wch:34},{wch:16},{wch:22},{wch:34},{wch:16},{wch:12},{wch:12},{wch:13},{wch:9},{wch:30}];
+        var c=counts(list);
+        var summary=[["EASTMAN AUTO & POWER LTD — MRP REQUIRED DATA TRACKER REPORT"],
+          ["Generated on", today(), "", "Project owner", "Bhupendra Bisht (bhupendra.bisht@eaplworld.com)"],[],
+          ["Total tasks", c.total],["Not started", c.ns],["Data collection", c.dc],["Validation", c.vl],["Uploaded in SAP", c.up],
+          ["Completed", c.dn],["Overdue", c.ov],["Completion %", Math.round(100*c.dn/c.total)+"%"],[]];
+        ["ENEPL","EPTPL","EGTPL","EAPL (LAB)"].forEach(function(co){
+          var cl=list.filter(function(i){return i.company===co}); if(!cl.length)return;
+          var cc=counts(cl);
+          summary.push([co, cc.dn+" / "+cc.total+" done", cc.ov?cc.ov+" overdue":"", Math.round(100*cc.dn/cc.total)+"%"]);
+        });
+        var wsS=XLSX.utils.aoa_to_sheet(summary); wsS["!cols"]=[{wch:24},{wch:18},{wch:14},{wch:44}];
+        XLSX.utils.book_append_sheet(wb,wsS,"Summary");
+        var wsA=XLSX.utils.aoa_to_sheet([head].concat(rowsOf(list))); wsA["!cols"]=cols;
+        XLSX.utils.book_append_sheet(wb,wsA,"All Companies");
+        ["ENEPL","EPTPL","EGTPL","EAPL (LAB)"].forEach(function(co){
+          var cl=list.filter(function(i){return i.company===co}); if(!cl.length)return;
+          var ws=XLSX.utils.aoa_to_sheet([head].concat(rowsOf(cl))); ws["!cols"]=cols;
+          XLSX.utils.book_append_sheet(wb,ws,co.replace(/[\\\/\?\*\[\]:]/g," ").slice(0,31));
+        });
+        var sp=[["Company","Department","SPOC Name","Mail ID"]];
+        SPOC_SLOTS.forEach(function(k){ var p=k.split("|"), v=SPOC[k]||{}; sp.push([p[0],p[1],v.name||"",v.mail||""]) });
+        var wsP=XLSX.utils.aoa_to_sheet(sp); wsP["!cols"]=[{wch:12},{wch:14},{wch:24},{wch:36}];
+        XLSX.utils.book_append_sheet(wb,wsP,"SPOC List");
+        var out=XLSX.write(wb,{bookType:"xlsx",type:"array"});
+        var blob=new Blob([out],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+        var dl=await window.claude.use("downloads");
+        if(dl){ await dl.save({filename:"EAPL_MRP_Tracker_Report_"+today()+".xlsx", data:blob}); flash("Tracker report downloaded") }
+        else flash("Download works inside the Claude viewer");
+      }catch(err){ flash("Export failed: "+((err&&err.message)||err)) }
+    })();
+  });
   renderSpoc();
   (async function(){
     try{
